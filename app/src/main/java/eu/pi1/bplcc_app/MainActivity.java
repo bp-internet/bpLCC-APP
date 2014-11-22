@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.support.v4.widget.DrawerLayout;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,7 +14,11 @@ import android.view.ViewGroup;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.NumberPicker;
 import android.widget.SeekBar;
+import android.widget.Switch;
+import android.widget.TextView;
 
 
 public class MainActivity extends Activity
@@ -32,6 +37,10 @@ public class MainActivity extends Activity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
+
         setContentView(R.layout.activity_main);
 
         mNavigationDrawerFragment = (NavigationDrawerFragment)
@@ -149,9 +158,16 @@ public class MainActivity extends Activity
     
     public static class OinserFragment extends Fragment {
 
+        private int oldValue;
+
     	private View rootView;
-    	private WebView web;
     	private Button button;
+        private TextView textview;
+
+        private NumberPicker stroboAnPicker;
+        private NumberPicker stroboAusPicker;
+        private Switch stroboSwitch;
+
         //private static String PIURLLED = "http://192.168.1.123/433/light.php?";
 	    private static String ARDUINOLEDURL = "http://192.168.1.10/";
         
@@ -159,9 +175,8 @@ public class MainActivity extends Activity
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                 Bundle savedInstanceState) {
             rootView = inflater.inflate(R.layout.fragment_oins, container, false);
-            web = (WebView) rootView.findViewById(R.id.webViewLight);
-            web.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
-            web.getSettings().setAppCacheEnabled(false);
+            textview = (TextView) rootView.findViewById(R.id.ArduinoValue);
+
             addListenerOnButton();
             return rootView;
         }
@@ -172,15 +187,19 @@ public class MainActivity extends Activity
     		button.setOnClickListener(new OnClickListener() {
     			@Override
     			public void onClick(View arg0) {
-    				web.loadUrl(ARDUINOLEDURL+String.valueOf("1"));
-    			}
+                    new UrlContent(ARDUINOLEDURL+String.valueOf("1"));
+                    textview.setText(String.valueOf("1"));
+                    oldValue = 1;
+                }
     		});
     		
     		button = (Button) rootView.findViewById(R.id.button_an);
     		button.setOnClickListener(new OnClickListener() {
     			@Override
     			public void onClick(View arg0) {
-    				web.loadUrl(ARDUINOLEDURL+String.valueOf("72"));
+                    new UrlContent(ARDUINOLEDURL+String.valueOf("72"));
+                    textview.setText(String.valueOf("72"));
+                    oldValue = 72;
     			}
     		});
     		
@@ -188,7 +207,9 @@ public class MainActivity extends Activity
     		button.setOnClickListener(new OnClickListener() {
     			@Override
     			public void onClick(View arg0) {
-    				web.loadUrl(ARDUINOLEDURL+String.valueOf("0"));
+                    new UrlContent(ARDUINOLEDURL+String.valueOf("0"));
+                    textview.setText(String.valueOf("0"));
+                    oldValue = 0;
     			}
     		});
     		
@@ -196,7 +217,9 @@ public class MainActivity extends Activity
     		button.setOnClickListener(new OnClickListener() {
     			@Override
     			public void onClick(View arg0) {
-    				web.loadUrl(ARDUINOLEDURL+String.valueOf("255"));
+                    new UrlContent(ARDUINOLEDURL+String.valueOf("255"));
+                    textview.setText(String.valueOf("255"));
+                    oldValue = 255;
     			}
     		});
     		
@@ -206,7 +229,9 @@ public class MainActivity extends Activity
     			@Override
     			public void onStopTrackingTouch(SeekBar seekBar) {
     				int value = seekBar.getProgress();
-    				web.loadUrl(ARDUINOLEDURL+String.valueOf(value));
+                    new UrlContent(ARDUINOLEDURL+String.valueOf(value));
+                    textview.setText(String.valueOf(value));
+                    oldValue = value;
     			}
     			
     			@Override
@@ -218,10 +243,48 @@ public class MainActivity extends Activity
     			@Override
     			public void onProgressChanged(SeekBar seekBar, int progress,
     					boolean fromUser) {
-    				//int value = seekBar.getProgress();
-    				//web.loadUrl(ARDUINOLEDURL+String.valueOf(value));
+    				int value = seekBar.getProgress();
+                    new UrlContent(ARDUINOLEDURL+String.valueOf(value));
+                    textview.setText(String.valueOf(value));
+                    oldValue = value;
     			}
     		});
+
+            stroboAnPicker = (NumberPicker) rootView.findViewById(R.id.strobo_an);
+            stroboAusPicker = (NumberPicker) rootView.findViewById(R.id.strobo_aus);
+
+            stroboAnPicker.setMinValue(0);
+            stroboAnPicker.setMaxValue(1000);
+            stroboAnPicker.setValue(10);
+            stroboAnPicker.setWrapSelectorWheel(false);
+
+            stroboAusPicker.setMinValue(0);
+            stroboAusPicker.setMaxValue(1000);
+            stroboAusPicker.setValue(10);
+            stroboAusPicker.setWrapSelectorWheel(false);
+
+            stroboSwitch = (Switch) rootView.findViewById(R.id.strobo_switch);
+
+            stroboSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    if(isChecked)
+                    {
+                        String strobo_usr = ARDUINOLEDURL+"s/"+stroboAnPicker.getValue()+"/"+stroboAusPicker.getValue();
+                        new UrlContent(strobo_usr);
+                        textview.setText(String.valueOf("strobo an:"+stroboAnPicker.getValue()+" aus:"+stroboAusPicker.getValue()));
+                    }
+                    else
+                    {
+                        new UrlContent(ARDUINOLEDURL+String.valueOf(oldValue));
+                        textview.setText(String.valueOf(oldValue));
+                        oldValue = oldValue;
+                    }
+                }
+            });
+
+
+
     	}
     }
 
